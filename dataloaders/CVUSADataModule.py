@@ -22,6 +22,8 @@ class CVUSADataModule(pl.LightningDataModule):
         num_workers=0,
         mean_std=IMAGENET_MEAN_STD,
         show_data_stats=True,
+        max_train_pairs=None,
+        max_test_pairs=None,
     ):
         super().__init__()
         self.root = root
@@ -33,6 +35,8 @@ class CVUSADataModule(pl.LightningDataModule):
         self.mean_dataset = mean_std['mean']
         self.std_dataset = mean_std['std']
         self.show_data_stats = show_data_stats
+        self.max_train_pairs = max_train_pairs
+        self.max_test_pairs = max_test_pairs
         self.val_set_names = ['cvusa']
         self.save_hyperparameters()
 
@@ -71,12 +75,14 @@ class CVUSADataModule(pl.LightningDataModule):
                 csv_path=self.train_csv,
                 root=self.root,
                 transform=self.train_transform,
+                max_pairs=self.max_train_pairs,
             )
             self.val_datasets = [
                 CVUSAValDataset(
                     csv_path=self.test_csv,
                     root=self.root,
                     transform=self.valid_transform,
+                    max_pairs=self.max_test_pairs,
                 )
             ]
             if self.show_data_stats:
@@ -101,4 +107,5 @@ class CVUSADataModule(pl.LightningDataModule):
         print(f'  # test pairs: {self.val_datasets[0].num_references}')
         print(f'  batch size: {self.batch_size}')
         print(f'  image size: {self.image_size}')
+
 

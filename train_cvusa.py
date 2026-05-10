@@ -1,4 +1,4 @@
-﻿import argparse
+import argparse
 from pathlib import Path
 
 import pytorch_lightning as pl
@@ -10,6 +10,19 @@ from main import VPRModel
 
 def parse_region_scales(value):
     return tuple(int(item.strip()) for item in value.split(',') if item.strip())
+
+
+def infer_resnet_channels(backbone, layers_to_crop):
+    backbone = backbone.lower()
+    if '18' in backbone or '34' in backbone:
+        channels = 512
+    else:
+        channels = 2048
+    if 4 in layers_to_crop:
+        channels //= 2
+    if 3 in layers_to_crop:
+        channels //= 2
+    return channels
 
 
 def parse_args():
@@ -34,6 +47,12 @@ def parse_args():
     parser.add_argument('--region_scales', default='1,2,4')
     parser.add_argument('--gabor_kernel_size', type=int, default=7)
     parser.add_argument('--gabor_orientations', type=int, default=4)
+    parser.add_argument('--layers_to_freeze', type=int, default=2)
+    parser.add_argument('--max_train_pairs', type=int, default=None)
+    parser.add_argument('--max_test_pairs', type=int, default=None)
+    parser.add_argument('--check_val_every_n_epoch', type=int, default=1)
+    parser.add_argument('--save_top_k', type=int, default=3)
+    parser.add_argument('--ckpt_path', default=None)
     parser.add_argument('--accelerator', default='auto', choices=['auto', 'cpu', 'gpu'])
     parser.add_argument('--precision', default='32-true')
     parser.add_argument('--fast_dev_run', action='store_true')
@@ -52,10 +71,14 @@ def main():
         image_size=(args.image_size, args.image_size),
         num_workers=args.workers,
         show_data_stats=True,
+        max_train_pairs=args.max_train_pairs,
+        max_test_pairs=args.max_test_pairs,
     )
 
+    layers_to_crop = [4]
+    in_channels = infer_resnet_channels(args.backbone, layers_to_crop)
     agg_config = {
-        'in_channels': 1024,
+        'in_channels': in_channels,
         'in_h': args.image_size // 16,
         'in_w': args.image_size // 16,
         'out_channels': args.out_channels,
@@ -73,8 +96,8 @@ def main():
     model = VPRModel(
         backbone_arch=args.backbone,
         pretrained=args.pretrained,
-        layers_to_freeze=2,
-        layers_to_crop=[4],
+        layers_to_freeze=args.layers_to_freeze,
+        layers_to_crop=layers_to_crop,
         agg_arch=args.aggregator,
         agg_config=agg_config,
         lr=args.lr,
@@ -95,7 +118,7 @@ def main():
         filename=f'{args.backbone}_{args.aggregator}_cvusa_' + 'epoch({epoch:02d})_R1[{cvusa/R1:.4f}]',
         auto_insert_metric_name=False,
         save_weights_only=True,
-        save_top_k=3,
+        save_top_k=args.save_top_k,
         mode='max',
     )
 
@@ -106,16 +129,14 @@ def main():
         precision=args.precision,
         max_epochs=args.epochs,
         num_sanity_val_steps=0,
-        check_val_every_n_epoch=1,
+        check_val_every_n_epoch=args.check_val_every_n_epoch,
         callbacks=[checkpoint_cb],
         reload_dataloaders_every_n_epochs=0,
         log_every_n_steps=10,
         fast_dev_run=args.fast_dev_run,
     )
-    trainer.fit(model=model, datamodule=datamodule)
+    trainer.fit(model=model, datamodule=datamodule, ckpt_path=args.ckpt_path)
 
 
 if __name__ == '__main__':
     main()
-
-

@@ -1,4 +1,4 @@
-from pathlib import Path
+﻿from pathlib import Path
 
 import pandas as pd
 import torch
@@ -39,21 +39,23 @@ class CVUSAPathResolver:
         raise FileNotFoundError(f'Could not resolve CVUSA path "{csv_path}" under "{self.root}"')
 
 
-def read_cvusa_csv(csv_path):
+def read_cvusa_csv(csv_path, max_pairs=None):
     df = pd.read_csv(csv_path, header=None)
     if df.shape[1] < 2:
         raise ValueError(f'CVUSA csv must contain at least satellite and ground columns: {csv_path}')
     df = df.iloc[:, :2].copy()
     df.columns = ['satellite', 'ground']
+    if max_pairs is not None:
+        df = df.head(max_pairs).copy()
     return df
 
 
 class CVUSAPairedDataset(Dataset):
-    def __init__(self, csv_path, root=DEFAULT_ROOT, transform=None):
+    def __init__(self, csv_path, root=DEFAULT_ROOT, transform=None, max_pairs=None):
         self.csv_path = Path(csv_path)
         self.root = Path(root)
         self.transform = transform
-        self.dataframe = read_cvusa_csv(self.csv_path)
+        self.dataframe = read_cvusa_csv(self.csv_path, max_pairs=max_pairs)
         self.resolver = CVUSAPathResolver(self.root)
         self.total_nb_images = len(self.dataframe) * 2
 
@@ -76,11 +78,11 @@ class CVUSAPairedDataset(Dataset):
 
 
 class CVUSAValDataset(Dataset):
-    def __init__(self, csv_path, root=DEFAULT_ROOT, transform=None):
+    def __init__(self, csv_path, root=DEFAULT_ROOT, transform=None, max_pairs=None):
         self.csv_path = Path(csv_path)
         self.root = Path(root)
         self.transform = transform
-        self.dataframe = read_cvusa_csv(self.csv_path)
+        self.dataframe = read_cvusa_csv(self.csv_path, max_pairs=max_pairs)
         self.resolver = CVUSAPathResolver(self.root)
         self.num_references = len(self.dataframe)
         self.pIdx = [[idx] for idx in range(self.num_references)]
@@ -95,3 +97,5 @@ class CVUSAValDataset(Dataset):
         if self.transform is not None:
             image = self.transform(image)
         return image, index
+
+
