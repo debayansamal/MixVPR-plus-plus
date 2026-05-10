@@ -34,6 +34,8 @@ def parse_args():
     parser.add_argument('--region_scales', default='1,2,4')
     parser.add_argument('--gabor_kernel_size', type=int, default=7)
     parser.add_argument('--gabor_orientations', type=int, default=4)
+    parser.add_argument('--accelerator', default='auto', choices=['auto', 'cpu', 'gpu'])
+    parser.add_argument('--precision', default='32-true')
     parser.add_argument('--fast_dev_run', action='store_true')
     return parser.parse_args()
 
@@ -98,10 +100,10 @@ def main():
     )
 
     trainer = pl.Trainer(
-        accelerator='cpu',
+        accelerator=args.accelerator,
         devices=1,
         default_root_dir=str(Path(args.save_dir)),
-        precision=32,
+        precision=args.precision,
         max_epochs=args.epochs,
         num_sanity_val_steps=0,
         check_val_every_n_epoch=1,
@@ -115,4 +117,5 @@ def main():
 
 if __name__ == '__main__':
     main()
+
 

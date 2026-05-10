@@ -164,7 +164,7 @@ class VPRModel(pl.LightningModule):
         return {'loss': loss}
     
     # This is called at the end of eatch training epoch
-    def training_epoch_end(self, training_step_outputs):
+    def on_train_epoch_end(self):
         # we empty the batch_acc list for next epoch
         self.batch_acc = []
 
@@ -326,5 +326,6 @@ if __name__ == '__main__':
 
     # we call the trainer, we give it the model and the datamodule
     trainer.fit(model=model, datamodule=datamodule)
+
 
 
