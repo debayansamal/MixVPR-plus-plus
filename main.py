@@ -68,6 +68,7 @@ class VPRModel(pl.LightningModule):
         self.loss_fn = utils.get_loss(loss_name)
         self.miner = utils.get_miner(miner_name, miner_margin)
         self.batch_acc = [] # we will keep track of the % of trivial pairs/triplets at the loss level 
+        self.val_outputs = []
 
         self.faiss_gpu = faiss_gpu
         
@@ -174,19 +175,22 @@ class VPRModel(pl.LightningModule):
         places, _ = batch
         # calculate descriptors
         descriptors = self(places)
-        return descriptors.detach().cpu()
+        loader_idx = 0 if dataloader_idx is None else dataloader_idx
+        while len(self.val_outputs) <= loader_idx:
+            self.val_outputs.append([])
+        self.val_outputs[loader_idx].append(descriptors.detach().cpu())
+
+    def on_validation_epoch_start(self):
+        self.val_outputs = []
     
-    def validation_epoch_end(self, val_step_outputs):
+    def on_validation_epoch_end(self):
         """this return descriptors in their order
         depending on how the validation dataset is implemented 
         for this project (MSLS val, Pittburg val), it is always references then queries
         [R1, R2, ..., Rn, Q1, Q2, ...]
         """
         dm = self.trainer.datamodule
-        # The following line is a hack: if we have only one validation set, then
-        # we need to put the outputs in a list (Pytorch Lightning does not do it presently)
-        if len(dm.val_datasets)==1: # we need to put the outputs in a list
-            val_step_outputs = [val_step_outputs]
+        val_step_outputs = self.val_outputs
         
         for i, (val_set_name, val_dataset) in enumerate(zip(dm.val_set_names, dm.val_datasets)):
             feats = torch.concat(val_step_outputs[i], dim=0)
@@ -198,6 +202,10 @@ class VPRModel(pl.LightningModule):
                 positives = val_dataset.getPositives()
             elif 'msls' in val_set_name:
                 # split to ref and queries
+                num_references = val_dataset.num_references
+                num_queries = len(val_dataset)-num_references
+                positives = val_dataset.pIdx
+            elif 'cvusa' in val_set_name:
                 num_references = val_dataset.num_references
                 num_queries = len(val_dataset)-num_references
                 positives = val_dataset.pIdx
@@ -220,6 +228,7 @@ class VPRModel(pl.LightningModule):
             self.log(f'{val_set_name}/R1', pitts_dict[1], prog_bar=False, logger=True)
             self.log(f'{val_set_name}/R5', pitts_dict[5], prog_bar=False, logger=True)
             self.log(f'{val_set_name}/R10', pitts_dict[10], prog_bar=False, logger=True)
+        self.val_outputs = []
         print('\n\n')
             
             

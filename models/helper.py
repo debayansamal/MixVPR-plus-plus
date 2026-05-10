@@ -65,6 +65,14 @@ def get_aggregator(agg_arch='ConvAP', agg_config={}):
         assert 'in_channels' in agg_config
         return aggregators.ConvAP(**agg_config)
     
+    elif 'mixvpr++' in agg_arch.lower() or 'mixvprplusplus' in agg_arch.lower():
+        assert 'in_channels' in agg_config
+        assert 'out_channels' in agg_config
+        assert 'in_h' in agg_config
+        assert 'in_w' in agg_config
+        assert 'mix_depth' in agg_config
+        return aggregators.MixVPRPlusPlus(**agg_config)
+
     elif 'mixvpr' in agg_arch.lower():
         assert 'in_channels' in agg_config
         assert 'out_channels' in agg_config
