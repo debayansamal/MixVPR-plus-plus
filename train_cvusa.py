@@ -1,7 +1,8 @@
-import argparse
+﻿import argparse
 from pathlib import Path
 
 import pytorch_lightning as pl
+import torch
 from pytorch_lightning.callbacks import ModelCheckpoint
 
 from dataloaders.CVUSADataModule import CVUSADataModule
@@ -53,11 +54,22 @@ def parse_args():
     parser.add_argument('--check_val_every_n_epoch', type=int, default=1)
     parser.add_argument('--save_top_k', type=int, default=3)
     parser.add_argument('--ckpt_path', default=None)
+    parser.add_argument('--init_weights', default=None)
     parser.add_argument('--accelerator', default='auto', choices=['auto', 'cpu', 'gpu'])
     parser.add_argument('--precision', default='32-true')
     parser.add_argument('--fast_dev_run', action='store_true')
     return parser.parse_args()
 
+
+def load_initial_weights(model, checkpoint_path):
+    checkpoint = torch.load(checkpoint_path, map_location='cpu')
+    state_dict = checkpoint.get('state_dict', checkpoint)
+    missing, unexpected = model.load_state_dict(state_dict, strict=False)
+    print(f'Loaded initial weights from: {checkpoint_path}')
+    if missing:
+        print(f'Missing keys while loading initial weights: {len(missing)}')
+    if unexpected:
+        print(f'Unexpected keys while loading initial weights: {len(unexpected)}')
 
 def main():
     args = parse_args()
@@ -112,6 +124,9 @@ def main():
         miner_margin=0.1,
         faiss_gpu=False,
     )
+
+    if args.init_weights is not None:
+        load_initial_weights(model, args.init_weights)
 
     checkpoint_cb = ModelCheckpoint(
         monitor='cvusa/R1',
