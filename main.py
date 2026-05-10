@@ -102,17 +102,14 @@ class VPRModel(pl.LightningModule):
         scheduler = lr_scheduler.MultiStepLR(optimizer, milestones=self.milestones, gamma=self.lr_mult)
         return [optimizer], [scheduler]
     
-    # configure the optizer step, takes into account the warmup stage
-    def optimizer_step(self,  epoch, batch_idx,
-                        optimizer, optimizer_idx, optimizer_closure,
-                        on_tpu, using_native_amp, using_lbfgs):
+    # configure the optimizer step, takes into account the warmup stage
+    def optimizer_step(self, epoch, batch_idx, optimizer, optimizer_closure=None):
         # warm up lr
         if self.trainer.global_step < self.warmpup_steps:
             lr_scale = min(1., float(self.trainer.global_step + 1) / self.warmpup_steps)
             for pg in optimizer.param_groups:
                 pg['lr'] = lr_scale * self.lr
-        optimizer.step(closure=optimizer_closure)
-        
+        optimizer.step(closure=optimizer_closure)        
     #  The loss function call (this method will be called at each training iteration)
     def loss_function(self, descriptors, labels):
         # we mine the pairs/triplets if there is an online mining strategy
@@ -326,6 +323,8 @@ if __name__ == '__main__':
 
     # we call the trainer, we give it the model and the datamodule
     trainer.fit(model=model, datamodule=datamodule)
+
+
 
 
 
