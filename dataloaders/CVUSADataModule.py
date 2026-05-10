@@ -1,9 +1,14 @@
-import pytorch_lightning as pl
+﻿import pytorch_lightning as pl
 from torch.utils.data.dataloader import DataLoader
 from torchvision import transforms as T
 
 from dataloaders.CVUSADataset import CVUSAPairedDataset, CVUSAValDataset, DEFAULT_ROOT
-from dataloaders.GSVCitiesDataloader import IMAGENET_MEAN_STD
+
+
+IMAGENET_MEAN_STD = {
+    'mean': [0.485, 0.456, 0.406],
+    'std': [0.229, 0.224, 0.225],
+}
 
 
 class CVUSADataModule(pl.LightningDataModule):
@@ -96,3 +101,4 @@ class CVUSADataModule(pl.LightningDataModule):
         print(f'  # test pairs: {self.val_datasets[0].num_references}')
         print(f'  batch size: {self.batch_size}')
         print(f'  image size: {self.image_size}')
+
