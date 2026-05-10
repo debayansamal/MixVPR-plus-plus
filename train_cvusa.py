@@ -1,4 +1,4 @@
-import argparse
+﻿import argparse
 from pathlib import Path
 
 import pytorch_lightning as pl
@@ -40,7 +40,7 @@ def parse_args():
 
 def main():
     args = parse_args()
-    pl.utilities.seed.seed_everything(seed=190223, workers=True)
+    pl.seed_everything(seed=190223, workers=True)
 
     datamodule = CVUSADataModule(
         root=args.root,
@@ -115,3 +115,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+

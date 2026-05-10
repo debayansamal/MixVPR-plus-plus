@@ -233,7 +233,7 @@ class VPRModel(pl.LightningModule):
             
 if __name__ == '__main__':
     from dataloaders.GSVCitiesDataloader import GSVCitiesDataModule
-    pl.utilities.seed.seed_everything(seed=190223, workers=True)
+    pl.seed_everything(seed=190223, workers=True)
         
     datamodule = GSVCitiesDataModule(
         batch_size=120,
@@ -326,4 +326,5 @@ if __name__ == '__main__':
 
     # we call the trainer, we give it the model and the datamodule
     trainer.fit(model=model, datamodule=datamodule)
+
 
