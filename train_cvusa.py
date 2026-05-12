@@ -132,8 +132,9 @@ def main():
         monitor='cvusa/R1',
         filename=f'{args.backbone}_{args.aggregator}_cvusa_' + 'epoch({epoch:02d})_R1[{cvusa/R1:.4f}]',
         auto_insert_metric_name=False,
-        save_weights_only=True,
+        save_weights_only=False,
         save_top_k=args.save_top_k,
+        save_last=True,
         mode='max',
     )
 
@@ -155,3 +156,4 @@ def main():
 
 if __name__ == '__main__':
     main()
+
